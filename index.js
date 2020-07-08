@@ -60,7 +60,6 @@ const run = async () => {
 // fetch url and get siteURL
 const fetchHtmlContent = async (url) => {
   try {
-    return 'correct10';
     const fetchresult = await fetch(url);
     const html = await fetchresult.text();
 
