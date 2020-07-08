@@ -15,8 +15,6 @@ const run = async () => {
       `.lemon--div__373c0__1mboc:nth-child(1) > .lemon--div__373c0__1mboc:nth-child(1) > .lemon--div__373c0__1mboc > .lemon--div__373c0__1mboc:nth-child(2) > .lemon--p__373c0__3Qnnj:nth-child(2)`
     ).html();
 
-    console.log(!!pTagHtml, 'ptag presetn');
-
     let siteurl = '';
     if (!!pTagHtml) {
       cnt = i;
