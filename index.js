@@ -4,57 +4,63 @@ const fs = require('fs');
 const cheerio = require('cheerio');
 
 const run = async () => {
+  const workSheetsFromFile = xlsx.parse(
+    `${__dirname}/assets/LocalRestaurants.xlsx`
+  );
+  let recordsModified = 0;
+
   try {
-    const workSheetsFromFile = xlsx.parse(
-      `${__dirname}/assets/LocalRestaurants.xlsx`
-    );
-
-    let finalXmlBuild = [];
-
     // loop over all sheets .workSheetsFromFile.length
-    for (let i = 0; i < 1; i++) {
-      const currentSheet = workSheetsFromFile[i];
-      let obj = {
-        name: currentSheet.name
-      };
+    for (let sheets = 0; sheets < workSheetsFromFile.length; sheets++) {
+      const currentSheet = workSheetsFromFile[sheets];
+
       const currentSheetData = currentSheet.data;
-      const indexForUrlField = currentSheet.data[0].indexOf('URL');
-      const allColumns = currentSheetData[0];
-      allColumns.push('siteUrl');
-      let modifiedData = [];
-      console.log(allColumns);
 
-      modifiedData.push(allColumns);
-      let cnt = modifiedData.length;
+      // find the index of column URL
+      const indexForUrlField = currentSheetData[0].indexOf(
+        currentSheetData[0].find((el) => el.toLowerCase() === 'url')
+      );
 
-      console.log('Writing for ', currentSheet.name);
+      // if column siteURL not present then add
+      if (!currentSheetData[0].find((col) => col === 'siteURL'))
+        currentSheetData[0].push('siteURL');
 
-      // loop over sheet data . currentSheetData.length
-      for (let inner = 1; inner < 100; inner++) {
-        const url = currentSheetData[inner][indexForUrlField];
-        modifiedData.push(currentSheetData[inner]);
-        console.log(modifiedData, 'modified data');
+      // Get index for column siteURL
+      const siteURLindex = currentSheetData[0].length - 1;
 
-        const siteurl = await fetchHtmlContent(url);
-
-        modifiedData[cnt].push(siteurl);
-        cnt++;
+      console.log(
+        'Processing sheet:',
+        currentSheet.name,
+        '\nfetching ....................................'
+      );
+      for (let row = 1; row < currentSheetData.length; row++) {
+        // if existing records has url then dont check
+        if (!currentSheetData[row][siteURLindex]) {
+          const url = currentSheetData[row][indexForUrlField];
+          const siteurl = await fetchHtmlContent(url);
+          if (!!siteurl) {
+            currentSheetData[row][siteURLindex] = siteurl;
+            recordsModified++;
+          }
+        }
       }
-
-      obj['data'] = modifiedData;
-      finalXmlBuild.push(obj);
     }
-    // crete xlsx file
-    writeToExcel(finalXmlBuild);
+    console.log('Total records modified : ', recordsModified);
+    // update xlsx file
+    if (recordsModified > 0) updateXlsx(workSheetsFromFile);
   } catch (error) {
+    console.log('in catch');
+    if (!!workSheetsFromFile && recordsModified > 0) {
+      updateXlsx(workSheetsFromFile);
+    }
     console.log('error: ', error.message);
   }
 };
 
+// fetch url and get siteURL
 const fetchHtmlContent = async (url) => {
   try {
-    // return 'testurl';
-    console.log('fetching url');
+    return 'correct10';
     const fetchresult = await fetch(url);
     const html = await fetchresult.text();
 
@@ -69,22 +75,24 @@ const fetchHtmlContent = async (url) => {
       const actualUrl = loadInnerHtml('a').text();
 
       siteurl = !!actualUrl ? actualUrl : '';
-      console.log(siteurl, 'siteurl');
+    } else {
+      throw new Error('Sorry, you’re not allowed to access this page.');
     }
 
     return siteurl;
   } catch (error) {
-    console.log(error.message, 'Error occured in fetch');
+    console.log('Error while Fetching url.', error.message);
   }
 };
 
-const writeToExcel = async (modifiedData) => {
+// update xlsx file
+const updateXlsx = async (modifiedData) => {
   try {
-    console.log('Wait .. file is getting ready');
-    var buffer = xlsx.build(modifiedData); // Returns a buffer
-    fs.writeFile('updateddata.xlsx', buffer, (err) => {
+    console.log('writing to file ...........');
+    const buffer = xlsx.build(modifiedData); // Returns a buffer
+    fs.writeFile('./assets/LocalRestaurants.xlsx', buffer, (err) => {
       if (err) throw err;
-      console.log('done');
+      console.log('done!!');
     });
   } catch (error) {
     console.log('Error in file writing', error.message);
