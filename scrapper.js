@@ -7,7 +7,8 @@ const run = async () => {
   const workSheetsFromFile = xlsx.parse(
     `${__dirname}/assets/LocalRestaurants.xlsx`
   );
-  let recordsModified = 0;
+  let successCount = 0;
+  let failCount = 0;
 
   try {
     // loop over all sheets .workSheetsFromFile.length
@@ -33,24 +34,32 @@ const run = async () => {
         currentSheet.name,
         '\nfetching ....................................'
       );
+      // currentSheetData.length
       for (let row = 1; row < currentSheetData.length; row++) {
-        // if existing records has url then dont check
-        if (!currentSheetData[row][siteURLindex]) {
-          const url = currentSheetData[row][indexForUrlField];
-          const siteurl = await fetchHtmlContent(url);
-          if (!!siteurl) {
-            currentSheetData[row][siteURLindex] = siteurl;
-            recordsModified++;
+        const url = currentSheetData[row][indexForUrlField];
+        // if url present
+        if (!!url) {
+          // if existing records has url then dont check
+          if (!currentSheetData[row][siteURLindex]) {
+            let siteurl = await fetchHtmlContent(url);
+            if (!!siteurl) {
+              currentSheetData[row][siteURLindex] = siteurl;
+              successCount++;
+            } else {
+              failCount++;
+            }
           }
         }
       }
     }
-    console.log('Total records modified : ', recordsModified);
+    console.log('success count : ', successCount);
+    console.log('fail count : ', failCount);
+
     // update xlsx file
-    if (recordsModified > 0) updateXlsx(workSheetsFromFile);
+    if (successCount > 0) updateXlsx(workSheetsFromFile);
   } catch (error) {
     console.log('in catch');
-    if (!!workSheetsFromFile && recordsModified > 0) {
+    if (!!workSheetsFromFile && successCount > 0) {
       updateXlsx(workSheetsFromFile);
     }
     console.log('error: ', error.message);
