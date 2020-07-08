@@ -3,10 +3,11 @@ const fetch = require('node-fetch');
 const fs = require('fs');
 const cheerio = require('cheerio');
 
+// get file name from cmd e.g node . filename.txt or set default
+let filename = process.argv[2] || 'Arizona.xlsx';
+
 const run = async () => {
-  const workSheetsFromFile = xlsx.parse(
-    `${__dirname}/assets/LocalRestaurants.xlsx`
-  );
+  const workSheetsFromFile = xlsx.parse(`${__dirname}/assets/${filename}`);
   let successCount = 0;
   let failCount = 0;
 
@@ -82,7 +83,7 @@ const fetchHtmlContent = async (url) => {
       let loadInnerHtml = cheerio.load(pTagHtml);
       const actualUrl = loadInnerHtml('a').text();
 
-      siteurl = !!actualUrl ? actualUrl : '';
+      siteurl = !!actualUrl ? `http://www.${actualUrl}` : '';
     } else {
       throw new Error('Sorry, you’re not allowed to access this page.');
     }
@@ -98,7 +99,7 @@ const updateXlsx = async (modifiedData) => {
   try {
     console.log('writing to file ...........');
     const buffer = xlsx.build(modifiedData); // Returns a buffer
-    fs.writeFile('./assets/LocalRestaurants.xlsx', buffer, (err) => {
+    fs.writeFile(`./assets/${filename}`, buffer, (err) => {
       if (err) throw err;
       console.log('done!!');
     });
