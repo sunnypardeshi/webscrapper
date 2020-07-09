@@ -2,11 +2,55 @@ const xlsx = require('node-xlsx');
 const fetch = require('node-fetch');
 const fs = require('fs');
 const cheerio = require('cheerio');
+const inquirer = require('inquirer');
+const chalk = require('chalk');
+const figlet = require('figlet');
 
-// get file name from cmd e.g node . filename.txt or set default
-let filename = process.argv[2] || 'Arizona.xlsx';
+// // get file name from cmd e.g node . filename.txt or set default
+// let filename = process.argv[2] || 'Arizona.xlsx';
+
+let filename;
+
+const initPrint = () => {
+  console.log(
+    chalk.magenta(
+      figlet.textSync('Welcome', {
+        font: 'Big',
+        horizontalLayout: 'default',
+        verticalLayout: 'default'
+      })
+    )
+  );
+};
+
+const askQuestion = () => {
+  initPrint();
+  const questions = [
+    {
+      type: 'list',
+      name: 'filename',
+      message: 'Select file to process.',
+      choices: getFilenames(),
+      filter: function (val) {
+        return val.split(':')[1].trim();
+      }
+    }
+  ];
+
+  return inquirer.prompt(questions);
+};
+
+const getFilenames = () => {
+  let filelist = fs.readdirSync('./assets/');
+  filelist = filelist.map((el, index) => {
+    return `${index + 1}: ${el}`;
+  });
+  return filelist;
+};
 
 const run = async () => {
+  const ansResult = await askQuestion();
+  filename = ansResult['filename'];
   const workSheetsFromFile = xlsx.parse(`${__dirname}/assets/${filename}`);
   let successCount = 0;
   let failCount = 0;
@@ -59,7 +103,6 @@ const run = async () => {
     // update xlsx file
     if (successCount > 0) updateXlsx(workSheetsFromFile);
   } catch (error) {
-    console.log('in catch');
     if (!!workSheetsFromFile && successCount > 0) {
       updateXlsx(workSheetsFromFile);
     }
