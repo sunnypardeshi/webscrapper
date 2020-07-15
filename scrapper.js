@@ -49,8 +49,10 @@ const getFilenames = () => {
 };
 
 const run = async () => {
+  //  filename = 'Arizona.xlsx'
   const ansResult = await askQuestion();
   filename = ansResult['filename'];
+  let errorCnt = 0;
   const workSheetsFromFile = xlsx.parse(`${__dirname}/assets/${filename}`);
   let successCount = 0;
   let failCount = 0;
@@ -79,21 +81,52 @@ const run = async () => {
         currentSheet.name,
         '\nfetching ....................................'
       );
+      let pageSize = 5;
+      let modificationsDone = 0;
       // currentSheetData.length
       for (let row = 1; row < currentSheetData.length; row++) {
         const url = currentSheetData[row][indexForUrlField];
-        // if url present
         if (!!url) {
+          // if url present
           // if existing records has url then dont check
           if (!currentSheetData[row][siteURLindex]) {
-            let siteurl = await fetchHtmlContent(url);
-            if (!!siteurl) {
-              currentSheetData[row][siteURLindex] = siteurl;
-              successCount++;
-            } else {
-              failCount++;
+            let siteurl;
+            try {
+              siteurl = await fetchHtmlContent(new URL(url));
+              if (!!siteurl) {
+                currentSheetData[row][siteURLindex] = siteurl;
+                console.log(
+                  row + 1,
+                  ' Hotel : ',
+                  currentSheetData[row][0],
+                  ' website: ',
+                  siteurl
+                );
+                successCount++;
+                modificationsDone++;
+                console.log('modifications done: ', modificationsDone);
+              }
+            } catch (error) {
+              console.log(error.message);
+              // if got error more than 5 times while fetching url .. then exit the application
+              if (errorCnt++ > 5) {
+                process.exit(1);
+              }
             }
           }
+        }
+        if (
+          modificationsDone === pageSize ||
+          modificationsDone === currentSheetData.length ||
+          row === currentSheetData.length
+        ) {
+          console.log(
+            'modificationDone',
+            modificationsDone,
+            ('\npageSize', pageSize)
+          );
+          await updateXlsx(workSheetsFromFile);
+          pageSize += 5;
         }
       }
     }
@@ -101,18 +134,18 @@ const run = async () => {
     console.log('fail count : ', failCount);
 
     // update xlsx file
-    if (successCount > 0) updateXlsx(workSheetsFromFile);
+    // if (successCount > 0) updateXlsx(workSheetsFromFile);
   } catch (error) {
     if (!!workSheetsFromFile && successCount > 0) {
-      updateXlsx(workSheetsFromFile);
+      // await updateXlsx(workSheetsFromFile);
     }
-    console.log('error: ', error.message);
   }
 };
 
 // fetch url and get siteURL
 const fetchHtmlContent = async (url) => {
   try {
+    // return 'ererer';
     const fetchresult = await fetch(url);
     const html = await fetchresult.text();
 
@@ -121,30 +154,51 @@ const fetchHtmlContent = async (url) => {
       `.lemon--div__373c0__1mboc:nth-child(1) > .lemon--div__373c0__1mboc:nth-child(1) > .lemon--div__373c0__1mboc > .lemon--div__373c0__1mboc:nth-child(2) > .lemon--p__373c0__3Qnnj:nth-child(2)`
     ).html();
 
-    let siteurl = '';
+    let accessDenied = completeHtml(
+      `body > .y-container > .y-container_content > .u-space-b6 > h2`
+    ).text();
+
+    if (!!accessDenied) {
+      throw new Error(`Error message: ${accessDenied}`);
+    }
+    let siteurl = 'Website Not Available';
     if (!!pTagHtml) {
       let loadInnerHtml = cheerio.load(pTagHtml);
-      const actualUrl = loadInnerHtml('a').text();
+      // // get href content
+      const isAnchorTagPresent = loadInnerHtml('a').attr('href');
+      // let hostname = new URL(url).origin;
+      if (!!isAnchorTagPresent) {
+        let urlcontent = !!url.href
+          ? new URL(`${url.origin}/${isAnchorTagPresent}`).searchParams.get(
+              'url'
+            )
+          : undefined;
+        let actualUrl = !!urlcontent ? urlcontent : undefined;
 
-      siteurl = !!actualUrl ? `http://www.${actualUrl}` : '';
-    } else {
-      throw new Error('Sorry, you’re not allowed to access this page.');
+        if (!!actualUrl) {
+          siteurl = actualUrl;
+        }
+      }
+      // siteurl = !!actualUrl ? actualUrl : 'Website Not Available';
     }
 
     return siteurl;
   } catch (error) {
-    console.log('Error while Fetching url.', error.message);
+    throw error;
   }
 };
 
 // update xlsx file
-const updateXlsx = async (modifiedData) => {
+const updateXlsx = (modifiedData) => {
   try {
-    console.log('writing to file ...........');
-    const buffer = xlsx.build(modifiedData); // Returns a buffer
-    fs.writeFile(`./assets/${filename}`, buffer, (err) => {
-      if (err) throw err;
-      console.log('done!!');
+    return new Promise((res, rej) => {
+      console.log(`Writing ${filename} ...........`);
+      const buffer = xlsx.build(modifiedData); // Returns a buffer
+      fs.writeFile(`./assets/${filename}`, buffer, (err) => {
+        if (err) throw err;
+        res();
+        console.log('done!!');
+      });
     });
   } catch (error) {
     console.log('Error in file writing', error.message);
