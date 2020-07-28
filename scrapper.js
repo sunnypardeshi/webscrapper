@@ -49,13 +49,12 @@ const getFilenames = () => {
 };
 
 const run = async () => {
-  //  filename = 'Arizona.xlsx'
+  // filename = 'Arizona.xlsx';
   const ansResult = await askQuestion();
   filename = ansResult['filename'];
   let errorCnt = 0;
   const workSheetsFromFile = xlsx.parse(`${__dirname}/assets/${filename}`);
   let successCount = 0;
-  let failCount = 0;
 
   try {
     // loop over all sheets .workSheetsFromFile.length
@@ -85,6 +84,7 @@ const run = async () => {
       let modificationsDone = 0;
       // currentSheetData.length
       for (let row = 1; row < currentSheetData.length; row++) {
+        const currentRow = row + 1;
         const url = currentSheetData[row][indexForUrlField];
         if (!!url) {
           // if url present
@@ -96,7 +96,7 @@ const run = async () => {
               if (!!siteurl) {
                 currentSheetData[row][siteURLindex] = siteurl;
                 console.log(
-                  row + 1,
+                  currentRow,
                   ' Hotel : ',
                   currentSheetData[row][0],
                   ' website: ',
@@ -118,7 +118,7 @@ const run = async () => {
         if (
           modificationsDone === pageSize ||
           modificationsDone === currentSheetData.length ||
-          row === currentSheetData.length
+          currentRow === currentSheetData.length
         ) {
           console.log(
             'modificationDone',
@@ -131,7 +131,6 @@ const run = async () => {
       }
     }
     console.log('success count : ', successCount);
-    console.log('fail count : ', failCount);
 
     // update xlsx file
     // if (successCount > 0) updateXlsx(workSheetsFromFile);
