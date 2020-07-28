@@ -4,7 +4,7 @@
   "description": "standalone",
   "main": "scrapper.js",
   "scripts": {
-    "scrap": "node .",
+    "start": "node .",
     "hitcount": "node siteHitcount.js"
   },
   "author": "",
