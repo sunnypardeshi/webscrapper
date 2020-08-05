@@ -6,9 +6,6 @@ const inquirer = require('inquirer');
 const chalk = require('chalk');
 const figlet = require('figlet');
 
-// // get file name from cmd e.g node . filename.txt or set default
-// let filename = process.argv[2] || 'Arizona.xlsx';
-
 let filename;
 
 const initPrint = () => {
@@ -29,7 +26,7 @@ const askQuestion = () => {
     {
       type: 'list',
       name: 'filename',
-      message: 'Select file to process.',
+      message: 'Which file you want to process ?',
       choices: getFilenames(),
       filter: function (val) {
         return val.split(':')[1].trim();
@@ -64,22 +61,15 @@ const run = async () => {
       const currentSheetData = currentSheet.data;
 
       // find the index of column URL
-      const indexForUrlField = currentSheetData[0].indexOf(
-        currentSheetData[0].find((el) => el.toLowerCase() === 'url')
-      );
+      const indexForUrlField = currentSheetData[0].indexOf(currentSheetData[0].find((el) => el.toLowerCase() === 'url'));
 
       // if column siteURL not present then add
-      if (!currentSheetData[0].find((col) => col === 'siteURL'))
-        currentSheetData[0].push('siteURL');
+      if (!currentSheetData[0].find((col) => col === 'siteURL')) currentSheetData[0].push('siteURL');
 
       // Get index for column siteURL
       const siteURLindex = currentSheetData[0].length - 1;
 
-      console.log(
-        'Processing sheet:',
-        currentSheet.name,
-        '\nfetching ....................................'
-      );
+      console.log('Processing sheet:', currentSheet.name, '\nfetching ....................................');
       let pageSize = 5;
       let modificationsDone = 0;
       // currentSheetData.length
@@ -95,13 +85,7 @@ const run = async () => {
               siteurl = await fetchHtmlContent(new URL(url));
               if (!!siteurl) {
                 currentSheetData[row][siteURLindex] = siteurl;
-                console.log(
-                  currentRow,
-                  ' Hotel : ',
-                  currentSheetData[row][0],
-                  ' website: ',
-                  siteurl
-                );
+                console.log(`Row : ${currentRow} Hotel : ${currentSheetData[row][0]} website: ${siteurl}`);
                 successCount++;
                 modificationsDone++;
                 console.log('modifications done: ', modificationsDone);
@@ -115,16 +99,8 @@ const run = async () => {
             }
           }
         }
-        if (
-          modificationsDone === pageSize ||
-          modificationsDone === currentSheetData.length ||
-          currentRow === currentSheetData.length
-        ) {
-          console.log(
-            'modificationDone',
-            modificationsDone,
-            ('\npageSize', pageSize)
-          );
+        if (modificationsDone === pageSize || modificationsDone === currentSheetData.length || currentRow === currentSheetData.length) {
+          console.log(`Time to update ${filename} Sheet: ${currentSheet.name}`);
           await updateXlsx(workSheetsFromFile);
           pageSize += 5;
         }
@@ -153,9 +129,7 @@ const fetchHtmlContent = async (url) => {
       `.lemon--div__373c0__1mboc:nth-child(1) > .lemon--div__373c0__1mboc:nth-child(1) > .lemon--div__373c0__1mboc > .lemon--div__373c0__1mboc:nth-child(2) > .lemon--p__373c0__3Qnnj:nth-child(2)`
     ).html();
 
-    let accessDenied = completeHtml(
-      `body > .y-container > .y-container_content > .u-space-b6 > h2`
-    ).text();
+    let accessDenied = completeHtml(`body > .y-container > .y-container_content > .u-space-b6 > h2`).text();
 
     if (!!accessDenied) {
       throw new Error(`Error message: ${accessDenied}`);
@@ -167,11 +141,7 @@ const fetchHtmlContent = async (url) => {
       const isAnchorTagPresent = loadInnerHtml('a').attr('href');
       // let hostname = new URL(url).origin;
       if (!!isAnchorTagPresent) {
-        let urlcontent = !!url.href
-          ? new URL(`${url.origin}/${isAnchorTagPresent}`).searchParams.get(
-              'url'
-            )
-          : undefined;
+        let urlcontent = !!url.href ? new URL(`${url.origin}/${isAnchorTagPresent}`).searchParams.get('url') : undefined;
         let actualUrl = !!urlcontent ? urlcontent : undefined;
 
         if (!!actualUrl) {
