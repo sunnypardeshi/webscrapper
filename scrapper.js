@@ -52,6 +52,7 @@ const run = async () => {
   let errorCnt = 0;
   const workSheetsFromFile = xlsx.parse(`${__dirname}/assets/${filename}`);
   let successCount = 0;
+  let isModified = false;
 
   try {
     // loop over all sheets .workSheetsFromFile.length
@@ -88,6 +89,7 @@ const run = async () => {
                 console.log(`Row : ${currentRow} Hotel : ${currentSheetData[row][0]} website: ${siteurl}`);
                 successCount++;
                 modificationsDone++;
+                isModified = true;
                 console.log('modifications done: ', modificationsDone);
               }
             } catch (error) {
@@ -100,11 +102,14 @@ const run = async () => {
           }
         }
         if (modificationsDone === pageSize || modificationsDone === currentSheetData.length || currentRow === currentSheetData.length) {
-          console.log(`Time to update ${filename} Sheet: ${currentSheet.name}`);
-          await updateXlsx(workSheetsFromFile);
-          pageSize += 5;
+          if (isModified) {
+            console.log(`Time to update ${filename} Sheet: ${currentSheet.name}`);
+            await updateXlsx(workSheetsFromFile);
+            pageSize += 5;
+          }
         }
       }
+      console.log(`Done with ${filename} Sheet: ${currentSheet.name}`);
     }
     console.log('success count : ', successCount);
 
