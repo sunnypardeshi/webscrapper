@@ -46,7 +46,7 @@ const getFilenames = () => {
 };
 
 const run = async () => {
-  // filename = 'Arizona.xlsx';
+  // filename = 'California.xlsx';
   const ansResult = await askQuestion();
   filename = ansResult['filename'];
   let errorCnt = 0;
@@ -96,6 +96,7 @@ const run = async () => {
               console.log(error.message);
               // if got error more than 5 times while fetching url .. then exit the application
               if (errorCnt++ > 5) {
+                if (modificationsDone > 0) await updateXlsx(workSheetsFromFile);
                 process.exit(1);
               }
             }
@@ -116,9 +117,7 @@ const run = async () => {
     // update xlsx file
     // if (successCount > 0) updateXlsx(workSheetsFromFile);
   } catch (error) {
-    if (!!workSheetsFromFile && successCount > 0) {
-      // await updateXlsx(workSheetsFromFile);
-    }
+    console.log('Error', error.message);
   }
 };
 
