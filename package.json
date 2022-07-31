@@ -14,7 +14,7 @@
     "cheerio": "^1.0.0-rc.3",
     "figlet": "^1.4.0",
     "inquirer": "^7.3.0",
-    "node-fetch": "^2.6.0",
+    "node-fetch": "^3.2.10",
     "node-xlsx": "^0.15.0",
     "request": "^2.88.2",
     "xlsx": "^0.16.3"
